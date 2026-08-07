@@ -1,0 +1,3 @@
+# Build output from hack/build-coredns.sh
+/dist/
+/coredns
