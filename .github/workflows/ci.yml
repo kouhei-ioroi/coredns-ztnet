@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test -race ./...
+
+  resolve:
+    name: Resolve CoreDNS version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      gover: ${{ steps.resolve.outputs.gover }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: resolve
+        run: |
+          VERSION="$(grep -oP 'github.com/coredns/coredns v\K[0-9.]+' go.mod)"
+          if [ -z "$VERSION" ]; then
+            echo "::error::could not determine CoreDNS version from go.mod"
+            exit 1
+          fi
+          GOVER="$(curl -fsSL "https://raw.githubusercontent.com/coredns/coredns/v${VERSION}/go.mod" | sed -n 's/^go[[:space:]]*//p' | head -1)"
+          GOVER="${GOVER:-stable}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "gover=${GOVER}" >> "$GITHUB_OUTPUT"
+
+  integration:
+    name: Plugin integration build
+    runs-on: ubuntu-latest
+    needs: [test, resolve]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ needs.resolve.outputs.gover }}
+      - name: Build CoreDNS with ztnet plugin
+        run: bash hack/build-coredns.sh "${{ needs.resolve.outputs.version }}" dist/coredns-ztnet
+      - name: Verify plugin is registered
+        run: |
+          out="$(dist/coredns-ztnet -plugins)"
+          echo "$out"
+          echo "$out" | grep -q ztnet

@@ -56,7 +56,7 @@ jobs:
             '- Current CoreDNS pin: v${{ steps.compare.outputs.current }}' \
             '- Latest upstream release: v${{ steps.compare.outputs.latest }}' \
             '' \
-            'Merging this makes the Build and publish workflow compile the plugin against the new upstream CoreDNS version.')"
+            'Merging this makes the CD workflow compile the plugin against the new upstream CoreDNS version.')"
           git checkout -b "$BRANCH"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

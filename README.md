@@ -77,9 +77,18 @@ GOOS=linux GOARCH=arm64 bash hack/build-coredns.sh 1.14.6 ./coredns-arm64
 `token` は Corefile に直接書くか、環境変数 `ZTNET_API_TOKEN` で指定します。環境変数を
 推奨します。
 
+## CI / CD
+
+| ワークフロー | トリガー | 内容 |
+|---|---|---|
+| [ci.yml](.github/workflows/ci.yml) | 全 PR / `workflow_dispatch` | `go vet` / `go test`、CoreDNS への組み込みビルドと `ztnet` プラグイン登録確認 |
+| [cd.yml](.github/workflows/cd.yml) | `main` への push（PR マージ含む）/ `v*` タグ / `workflow_dispatch` | バイナリ成果物・Docker イメージの公開、タグ時は GitHub Release |
+
+PR のマージ前チェックでは公開（push）は行いません。
+
 ## Docker イメージ
 
-GitHub Actions が自動ビルドし、`ghcr.io/<owner>/coredns-ztnet` に公開します。
+CD ワークフローがビルドし、`ghcr.io/<owner>/coredns-ztnet` に公開します。
 
 - `main` ブランチへの push → `main` / `latest` / `coredns-<version>` / sha タグ
 - `v*` タグの push → セマンティックバージョンタグ(`v1.0.0` 等) + `latest`
